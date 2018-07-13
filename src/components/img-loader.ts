@@ -1,4 +1,4 @@
-import { Component, Input, Output, ElementRef, Renderer, OnInit, EventEmitter } from '@angular/core';
+import { Component, Input, Output, ElementRef, Renderer, OnInit, EventEmitter, OnDestroy } from '@angular/core';
 import { ImageLoader } from '../providers/image-loader';
 import { ImageLoaderConfig } from '../providers/image-loader-config';
 
@@ -16,7 +16,7 @@ const propMap: any = {
   '<ng-content></ng-content>',
   styles: ['ion-spinner { float: none; margin-left: auto; margin-right: auto; display: block; }']
 })
-export class ImgLoader implements OnInit {
+export class ImgLoader implements OnInit, OnDestroy {
 
   /**
    * The URL of the image to load.
@@ -114,6 +114,9 @@ export class ImgLoader implements OnInit {
   @Output()
   load: EventEmitter<ImgLoader> = new EventEmitter<ImgLoader>();
 
+  @Output()
+  imgLoad: EventEmitter<any> = new EventEmitter<any>();
+
   /**
    * Indicates if the image is still loading
    * @type {boolean}
@@ -121,6 +124,10 @@ export class ImgLoader implements OnInit {
   isLoading: boolean = true;
 
   element: HTMLElement;
+
+  imgLoadCallBack = (evt)=>{
+    this.imgLoad.emit(this.element);
+  }
 
   constructor(
     private _element: ElementRef,
@@ -146,6 +153,12 @@ export class ImgLoader implements OnInit {
       } else {
         this.isLoading = false;
       }
+    }
+  }
+
+  ngOnDestroy(){
+    if(this.element != null){
+      this.element.removeEventListener("load", this.imgLoadCallBack);
     }
   }
 
@@ -192,6 +205,7 @@ export class ImgLoader implements OnInit {
       if (!this.element) {
         // create img element if we dont have one
         this.element = this._renderer.createElement(this._element.nativeElement, 'img');
+        this.element.addEventListener("load", this.imgLoadCallBack);
       }
 
       // set it's src
