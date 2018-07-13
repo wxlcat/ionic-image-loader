@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, Renderer } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, Renderer, OnDestroy } from '@angular/core';
 import { ImageLoader } from '../providers/image-loader';
 import { ImageLoaderConfig } from '../providers/image-loader-config';
 
@@ -13,10 +13,10 @@ const propMap: any = {
 @Component({
   selector: 'img-loader',
   template: '<ion-spinner *ngIf="spinner && isLoading && !fallbackAsPlaceholder" [name]="spinnerName" [color]="spinnerColor"></ion-spinner>' +
-  '<ng-content></ng-content>',
+    '<ng-content></ng-content>',
   styles: ['ion-spinner { float: none; margin-left: auto; margin-right: auto; display: block; }']
 })
-export class ImgLoader implements OnInit {
+export class ImgLoader implements OnInit, OnDestroy {
 
   /**
    * Fallback URL to load when the image url fails to load or does not exist.
@@ -68,6 +68,10 @@ export class ImgLoader implements OnInit {
    */
   @Output()
   load: EventEmitter<ImgLoader> = new EventEmitter<ImgLoader>();
+
+  @Output()
+  imgLoad: EventEmitter<any> = new EventEmitter<any>();
+
   /**
    * Indicates if the image is still loading
    * @type {boolean}
@@ -117,6 +121,12 @@ export class ImgLoader implements OnInit {
     this.cache = val !== false;
   }
 
+
+  imgLoadCallback = (evt) => {
+    this.imgLoad.emit(this.element);
+  }
+
+
   ngOnInit(): void {
     if (this.fallbackAsPlaceholder && this.fallbackUrl) {
       this.setImage(this.fallbackUrl, false);
@@ -135,6 +145,11 @@ export class ImgLoader implements OnInit {
         this.isLoading = false;
       }
     }
+  }
+
+  ngOnDestroy() {
+    if (this.element != null)
+      this.element.removeEventListener("load", this.imgLoadCallback);
   }
 
   private updateImage(imageUrl: string) {
@@ -180,6 +195,7 @@ export class ImgLoader implements OnInit {
       if (!this.element) {
         // create img element if we dont have one
         this.element = this._renderer.createElement(this._element.nativeElement, 'img');
+        this.element.addEventListener("load", this.imgLoadCallback);
       }
 
       // set it's src
@@ -208,5 +224,7 @@ export class ImgLoader implements OnInit {
     this.load.emit(this);
 
   }
+
+
 
 }
